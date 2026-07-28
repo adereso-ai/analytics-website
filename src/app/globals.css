@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-brand: #ffd540;
+  --color-brand-hover: #ffe37a;
+  --color-brand-active: #e6c039;
+  --color-neutral-800: #131415;
+  --color-neutral-900: #0c0c0d;
+  --font-outfit: var(--font-outfit);
+  --font-work-sans: var(--font-work-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background-color: #0c0c0d;
+  color: #ffffff;
+  font-family: var(--font-work-sans), system-ui, sans-serif;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: rgba(255, 213, 64, 0.08);
+  color: #ffd540;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+}
+
+.hero-in {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.65s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hero-in.on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Scrollbar sutil en paneles */
+.app-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.app-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
