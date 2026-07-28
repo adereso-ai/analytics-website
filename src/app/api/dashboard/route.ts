@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureConfigured, errorResponse } from "@/lib/api";
+import { getSessionUser } from "@/lib/auth/session";
 import { getPropertyId } from "@/lib/config";
 import {
   buildRangeMeta,
@@ -36,6 +37,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not Found" }, { status: 404 });
+  }
+
   const setup = ensureConfigured();
   if (setup) return setup;
 

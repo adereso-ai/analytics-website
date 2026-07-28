@@ -14,3 +14,35 @@ env:
     secret: GA4_SERVICE_ACCOUNT_JSON
     availability:
       - RUNTIME
+
+  # Firebase web config (público por diseño; necesario para Google Sign-In).
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyA7FibUot-smnJhuUa_9jpOZ8VmrJSPZwI"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "adereso-landings.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "adereso-landings"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:237337831100:web:a61078a22eeac0678552b9"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "237337831100"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "adereso-landings.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME

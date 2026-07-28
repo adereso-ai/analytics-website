@@ -16,6 +16,7 @@ import {
   IconForms,
   IconLayoutDashboard,
   IconLoader2,
+  IconLogout,
   IconRefresh,
   IconRoute,
   IconServer,
@@ -59,6 +60,7 @@ import type {
   ReportRow,
   LandingInterestRow,
 } from "@/lib/types";
+import type { SessionUser } from "@/lib/auth/domain";
 
 const font = "font-[family-name:var(--font-outfit)]";
 
@@ -174,7 +176,7 @@ const SECTIONS: {
   },
 ];
 
-export function Dashboard() {
+export function Dashboard({ user }: { user: SessionUser }) {
   const [selection, setSelection] = useState<DateSelection>(initialSelection);
   const [section, setSection] = useState<SectionId>("overview");
   const [formTab, setFormTab] = useState<
@@ -184,6 +186,16 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApiErrorBody | null>(null);
   const [on, setOn] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/session", { method: "DELETE" });
+    } finally {
+      window.location.href = "/login";
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setOn(true), 80);
@@ -313,6 +325,24 @@ export function Dashboard() {
             );
           })}
         </nav>
+
+        <div
+          className={`mt-4 border-t pt-4 px-1 hero-in ${on ? "on" : ""}`}
+          style={{ borderColor: "rgba(255,255,255,0.08)" }}
+        >
+          <p className="truncate px-2 text-xs text-white/40" title={user.email}>
+            {user.email}
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={loggingOut}
+            className="mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-white/55 transition hover:bg-white/[0.04] hover:text-white/80 disabled:opacity-50"
+          >
+            <IconLogout size={18} stroke={1.5} />
+            {loggingOut ? "Saliendo…" : "Cerrar sesión"}
+          </button>
+        </div>
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col relative">
