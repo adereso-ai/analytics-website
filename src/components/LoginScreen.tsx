@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { IconLock } from "@tabler/icons-react";
 import { LoginForm } from "@/components/LoginForm";
 
 const font = "font-[family-name:var(--font-outfit)]";
@@ -68,19 +67,8 @@ export function LoginScreen({ footer }: { footer?: ReactNode }) {
               color: "rgba(255,255,255,0.55)",
             }}
           >
-            Lecturas claras de GA4 para el equipo. Acceso interno con cuenta
-            corporativa.
+            Lecturas claras de GA4 para el equipo.
           </p>
-          <div
-            className={`hero-in ${on ? "on" : ""} mt-8 flex items-center gap-2 text-sm`}
-            style={{
-              transitionDelay: "0.22s",
-              color: "rgba(255,255,255,0.4)",
-            }}
-          >
-            <IconLock size={16} stroke={1.5} className="shrink-0 text-[#FFD540]/80" />
-            <span>Solo correos @adere.so · datos confidenciales</span>
-          </div>
         </div>
 
         {/* Auth action */}

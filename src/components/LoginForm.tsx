@@ -126,14 +126,6 @@ export function LoginForm() {
         Continuar con Google
       </button>
 
-      <p
-        className="mt-4 text-center text-xs leading-snug"
-        style={{ color: "rgba(255,255,255,0.38)" }}
-      >
-        Al continuar confirmas que eres parte del equipo Adereso
-        (@{ALLOWED_EMAIL_DOMAIN}).
-      </p>
-
       {error ? (
         <p
           className="mt-4 rounded-xl px-3 py-2.5 text-center text-xs leading-snug"
