@@ -67,7 +67,7 @@ export function LoginScreen({ footer }: { footer?: ReactNode }) {
               color: "rgba(255,255,255,0.55)",
             }}
           >
-            Lecturas claras de GA4 para el equipo.
+            Reportes de analítica web con datos de GA4.
           </p>
         </div>
 
