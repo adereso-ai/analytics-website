@@ -278,7 +278,7 @@ export function Dashboard({ user }: { user: SessionUser }) {
             className="text-sm mt-1 leading-snug"
             style={{ color: "rgba(255,255,255,0.45)" }}
           >
-            GA4 · lecturas claras
+            GA4
           </p>
         </div>
 
