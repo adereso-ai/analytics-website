@@ -1379,6 +1379,16 @@ function pathVariants(pagePath: string): string[] {
  * GA4 funnel steps no aceptan pagePath (INVALID_ARGUMENT).
  * Usamos pageLocation: home exacto por URL; resto CONTAINS ://host/path.
  */
+type PageLocationFunnelFilter = {
+  funnelFieldFilter: {
+    fieldName: string;
+    stringFilter: {
+      matchType: "EXACT" | "CONTAINS";
+      value: string;
+    };
+  };
+};
+
 function pageLocationFilterExpression(
   hostNames: string[],
   pagePath: string,
@@ -1386,14 +1396,14 @@ function pageLocationFilterExpression(
   const hosts = hostNames.length > 0 ? hostNames : ["adereso.ai"];
   const isHome = pagePath === "/" || pagePath === "";
 
-  const expressions = hosts.flatMap((host) => {
+  const expressions = hosts.flatMap((host): PageLocationFunnelFilter[] => {
     if (isHome) {
       return [
         {
           funnelFieldFilter: {
             fieldName: "pageLocation",
             stringFilter: {
-              matchType: "EXACT" as const,
+              matchType: "EXACT",
               value: `https://${host}/`,
             },
           },
@@ -1402,7 +1412,7 @@ function pageLocationFilterExpression(
           funnelFieldFilter: {
             fieldName: "pageLocation",
             stringFilter: {
-              matchType: "EXACT" as const,
+              matchType: "EXACT",
               value: `http://${host}/`,
             },
           },
@@ -1414,7 +1424,7 @@ function pageLocationFilterExpression(
       funnelFieldFilter: {
         fieldName: "pageLocation",
         stringFilter: {
-          matchType: "CONTAINS" as const,
+          matchType: "CONTAINS",
           value: `://${host}${path}`,
         },
       },
