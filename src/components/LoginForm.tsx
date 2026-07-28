@@ -69,12 +69,12 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full">
       <button
         type="button"
         onClick={handleGoogle}
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD540] px-4 py-3 font-[family-name:var(--font-outfit)] text-sm font-semibold text-[#0C0C0D] transition hover:bg-[#FFE37A] disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD540] px-4 py-3.5 font-[family-name:var(--font-outfit)] text-sm font-semibold text-[#0C0C0D] transition hover:bg-[#FFE37A] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? (
           <IconLoader2 className="h-4 w-4 animate-spin" />

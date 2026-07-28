@@ -193,7 +193,7 @@ export function Dashboard({ user }: { user: SessionUser }) {
     try {
       await fetch("/api/auth/session", { method: "DELETE" });
     } finally {
-      window.location.href = "/login";
+      window.location.href = "/";
     }
   }
 

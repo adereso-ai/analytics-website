@@ -5,6 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
+    pathname === "/" ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
@@ -18,8 +19,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Público sin sesión: 404 (no revelar que existe el dashboard)
-  if (pathname.startsWith("/api/")) {
+  // APIs y rutas internas sin sesión: 404
+  if (pathname.startsWith("/api/") || pathname.startsWith("/gone")) {
     return NextResponse.json({ error: "Not Found" }, { status: 404 });
   }
 
