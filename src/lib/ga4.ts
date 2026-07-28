@@ -3,6 +3,7 @@ import {
   v1alpha,
 } from "@google-analytics/data";
 import { getCredentials, getFunnelSteps, getInterestFunnelSteps, getPropertyId } from "./config";
+import { withGaLimit } from "./ga-queue";
 import { isAllowedHost } from "./hosts";
 import {
   isInterestCandidatePath,
@@ -21,6 +22,18 @@ import type {
 const { AlphaAnalyticsDataClient } = v1alpha;
 
 type ClientOptions = ConstructorParameters<typeof BetaAnalyticsDataClient>[0];
+type BetaClient = BetaAnalyticsDataClient;
+type AlphaClient = InstanceType<typeof AlphaAnalyticsDataClient>;
+type RunReportRequest = Parameters<BetaClient["runReport"]>[0];
+type RunFunnelReportRequest = Parameters<AlphaClient["runFunnelReport"]>[0];
+
+function gaRunReport(client: BetaClient, request: RunReportRequest) {
+  return withGaLimit(() => client.runReport(request));
+}
+
+function gaRunFunnelReport(client: AlphaClient, request: RunFunnelReportRequest) {
+  return withGaLimit(() => client.runFunnelReport(request));
+}
 
 function clientOptions(): ClientOptions {
   const creds = getCredentials();
@@ -111,7 +124,7 @@ export async function fetchOverview(
   endDate: string,
 ): Promise<OverviewStats> {
   const client = createClient();
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     metrics: [
@@ -151,7 +164,7 @@ export async function fetchTopPages(
     "averageSessionDuration",
   ];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -180,7 +193,7 @@ export async function fetchHosts(
     "engagementRate",
   ];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -208,7 +221,7 @@ export async function fetchTopPagesForHost(
     "bounceRate",
   ];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -254,13 +267,13 @@ export async function fetchGetThankYouConversion(
   };
 
   const [[hostRes], [tyRes]] = await Promise.all([
-    client.runReport({
+    gaRunReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       metrics: [{ name: "activeUsers" }, { name: "sessions" }],
       dimensionFilter: hostFilter,
     }),
-    client.runReport({
+    gaRunReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: "pagePath" }],
@@ -386,7 +399,7 @@ export async function fetchMainHubSpotConversion(
 
   const [[contactoTraffic], [thankYouFromContacto], [allConv], [contactoConv], [byPage]] =
     await Promise.all([
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         metrics: [{ name: "activeUsers" }],
@@ -396,7 +409,7 @@ export async function fetchMainHubSpotConversion(
           },
         },
       }),
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         metrics: [{ name: "activeUsers" }, { name: "sessions" }],
@@ -410,7 +423,7 @@ export async function fetchMainHubSpotConversion(
           },
         },
       }),
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         metrics: [
@@ -424,7 +437,7 @@ export async function fetchMainHubSpotConversion(
           },
         },
       }),
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         metrics: [{ name: "eventCount" }, { name: "totalUsers" }],
@@ -434,7 +447,7 @@ export async function fetchMainHubSpotConversion(
           },
         },
       }),
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         dimensions: [{ name: "hostName" }, { name: "pagePath" }],
@@ -478,7 +491,7 @@ export async function fetchMainHubSpotConversion(
 
   const pageTraffic = await Promise.all(
     byPageBase.map(async (p) => {
-      const [res] = await client.runReport({
+      const [res] = await gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         metrics: [{ name: "activeUsers" }],
@@ -629,7 +642,7 @@ export async function fetchConversionOrigins(
 
   const [[getByChannel], [mainThankYouByChannel], [hubspotByPage]] =
     await Promise.all([
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         dimensions: channelLandingDimensions,
@@ -647,7 +660,7 @@ export async function fetchConversionOrigins(
           : [{ metric: { metricName: "activeUsers" }, desc: true }],
         limit: rowLimit,
       }),
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         dimensions: channelLandingDimensions,
@@ -669,7 +682,7 @@ export async function fetchConversionOrigins(
           : [{ metric: { metricName: "activeUsers" }, desc: true }],
         limit: rowLimit,
       }),
-      client.runReport({
+      gaRunReport(client, {
         property: propertyPath(),
         dateRanges: [{ startDate, endDate }],
         dimensions: hubspotDimensions,
@@ -799,7 +812,7 @@ export async function fetchLandingInterest(
   };
 
   const [[pages], [formStarts], [hubspot], [getThankYou]] = await Promise.all([
-    client.runReport({
+    gaRunReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: "hostName" }, { name: "pagePath" }],
@@ -814,7 +827,7 @@ export async function fetchLandingInterest(
       orderBys: [{ metric: { metricName: "activeUsers" }, desc: true }],
       limit: 80,
     }),
-    client.runReport({
+    gaRunReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: "hostName" }, { name: "pagePath" }],
@@ -837,7 +850,7 @@ export async function fetchLandingInterest(
       },
       limit: 50,
     }),
-    client.runReport({
+    gaRunReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: "hostName" }, { name: "pagePath" }],
@@ -860,7 +873,7 @@ export async function fetchLandingInterest(
       },
       limit: 50,
     }),
-    client.runReport({
+    gaRunReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       metrics: [{ name: "activeUsers" }],
@@ -911,7 +924,7 @@ export async function fetchLandingInterest(
     : 0;
 
   // Contacto conversions = thank-you with referrer from /contacto
-  const [contactoTy] = await client.runReport({
+  const [contactoTy] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     metrics: [{ name: "activeUsers" }],
@@ -1046,7 +1059,7 @@ export async function fetchTrafficSources(
     "bounceRate",
   ];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1073,7 +1086,7 @@ export async function fetchTrafficSourceLandings(
   ];
   const metricNames = ["sessions", "activeUsers", "keyEvents"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1100,7 +1113,7 @@ export async function fetchLandingPages(
     "engagementRate",
   ];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1121,7 +1134,7 @@ export async function fetchConversionEvents(
   const dimensionNames = ["eventName"];
   const metricNames = ["eventCount", "keyEvents", "totalUsers"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1148,7 +1161,7 @@ export async function fetchConvertingPages(
   const dimensionNames = ["pagePath", "eventName"];
   const metricNames = ["keyEvents", "eventCount", "totalUsers"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1176,7 +1189,7 @@ export async function fetchFormEvents(
   const dimensionNames = ["eventName"];
   const metricNames = ["eventCount", "totalUsers", "keyEvents"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1208,7 +1221,7 @@ export async function fetchFormStartByPage(
   const dimensionNames = ["pagePath", "pageTitle"];
   const metricNames = ["eventCount", "totalUsers"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1236,7 +1249,7 @@ export async function fetchFormStartByChannel(
   const dimensionNames = ["sessionDefaultChannelGroup"];
   const metricNames = ["eventCount", "totalUsers"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1268,7 +1281,7 @@ export async function fetchFormStartBySource(
   ];
   const metricNames = ["eventCount", "totalUsers"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1296,7 +1309,7 @@ export async function fetchFormStartByChannelAndPage(
   const dimensionNames = ["sessionDefaultChannelGroup", "pagePath"];
   const metricNames = ["eventCount", "totalUsers"];
 
-  const [response] = await client.runReport({
+  const [response] = await gaRunReport(client, {
     property: propertyPath(),
     dateRanges: [{ startDate, endDate }],
     dimensions: dimensionNames.map((name) => ({ name })),
@@ -1503,7 +1516,7 @@ export async function fetchFunnel(
   const client = createAlphaClient();
 
   try {
-    const [response] = await client.runFunnelReport({
+    const [response] = await gaRunFunnelReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       funnel: {
@@ -1594,7 +1607,7 @@ export async function fetchInterestNextActions(
   const client = createAlphaClient();
 
   try {
-    const [response] = await client.runFunnelReport({
+    const [response] = await gaRunFunnelReport(client, {
       property: propertyPath(),
       dateRanges: [{ startDate, endDate }],
       funnel: {
