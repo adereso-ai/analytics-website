@@ -1,18 +1,48 @@
 # Firebase App Hosting — runtime config
 # Docs: https://firebase.google.com/docs/app-hosting/configure
-#
-# NEXT_PUBLIC_FIREBASE_* no van aquí (GitHub las marca como secret).
-# Configúralas en App Hosting → Configuración → Entorno.
 
 env:
+  # No sensible: también se puede setear en la consola (tiene prioridad).
   - variable: GA4_PROPERTY_ID
     value: "419811918"
     availability:
       - BUILD
       - RUNTIME
 
-  # Service account JSON en Cloud Secret Manager (nunca en git).
+  # Service account JSON en Cloud Secret Manager (nunca en git ni en la consola).
   - variable: GA4_SERVICE_ACCOUNT_JSON
     secret: GA4_SERVICE_ACCOUNT_JSON
     availability:
+      - RUNTIME
+
+  # Firebase web config (público por diseño; necesario para Google Sign-In).
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyA7FibUot-smnJhuUa_9jpOZ8VmrJSPZwI"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "adereso-landings.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "adereso-landings"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:237337831100:web:a61078a22eeac0678552b9"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "237337831100"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "adereso-landings.firebasestorage.app"
+    availability:
+      - BUILD
       - RUNTIME
