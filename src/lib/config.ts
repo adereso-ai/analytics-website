@@ -10,6 +10,12 @@ export function getPropertyId(): string | null {
   return id || null;
 }
 
+/** Propiedad de Cassper; el measurement ID asociado es G-RCMTVJ8444. */
+export function getCassperPropertyId(): string | null {
+  const id = process.env.CASSPER_GA4_PROPERTY_ID?.trim();
+  return id || null;
+}
+
 export function getCredentials(): GaCredentials | null {
   const json = process.env.GA4_SERVICE_ACCOUNT_JSON?.trim();
   if (json) return { kind: "json", json };

@@ -14,6 +14,7 @@ import type {
   FunnelResult,
   FunnelStepConfig,
   FunnelStepResult,
+  HomeTrafficPoint,
   NextActionRow,
   OverviewStats,
   ReportRow,
@@ -74,10 +75,104 @@ function createAlphaClient(): InstanceType<typeof AlphaAnalyticsDataClient> {
   return new AlphaAnalyticsDataClient(clientOptions());
 }
 
-function propertyPath(): string {
-  const id = getPropertyId();
+function propertyPath(propertyId?: string): string {
+  const id = propertyId ?? getPropertyId();
   if (!id) throw new Error("Falta GA4_PROPERTY_ID.");
   return `properties/${id}`;
+}
+
+/** Reporte genérico para una propiedad web independiente (p. ej. Cassper). */
+export async function fetchPropertySnapshot(
+  propertyId: string,
+  startDate: string,
+  endDate: string,
+) {
+  const client = createClient();
+  const metrics = ["activeUsers", "sessions", "screenPageViews", "keyEvents", "bounceRate", "averageSessionDuration"];
+  const [[overview], [series], [pages], [hosts], [sources], [events], [trialStarts], [contactForms], [agendaDemoClicks], [demoToContact, freeTrial]] = await Promise.all([
+    gaRunReport(client, { property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], metrics: metrics.map((name) => ({ name })) }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], dimensions: [{ name: "date" }],
+      metrics: [{ name: "sessions" }, { name: "activeUsers" }, { name: "screenPageViews" }],
+      orderBys: [{ dimension: { dimensionName: "date" }, desc: false }], limit: 10000,
+    }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], dimensions: [{ name: "hostName" }, { name: "pagePath" }],
+      metrics: [{ name: "screenPageViews" }, { name: "sessions" }, { name: "activeUsers" }],
+      orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }], limit: 15,
+    }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], dimensions: [{ name: "hostName" }],
+      metrics: [{ name: "sessions" }, { name: "activeUsers" }, { name: "screenPageViews" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }], limit: 20,
+    }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], dimensions: [{ name: "sessionDefaultChannelGroup" }],
+      metrics: [{ name: "sessions" }, { name: "activeUsers" }, { name: "screenPageViews" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }], limit: 12,
+    }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], dimensions: [{ name: "eventName" }],
+      metrics: [{ name: "eventCount" }, { name: "totalUsers" }, { name: "keyEvents" }],
+      orderBys: [{ metric: { metricName: "eventCount" }, desc: true }], limit: 20,
+    }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], metrics: [{ name: "eventCount" }],
+      dimensionFilter: { andGroup: { expressions: [
+        { filter: { fieldName: "eventName", stringFilter: { matchType: "EXACT", value: "free_trial_cta_click" } } },
+      ] } },
+    }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], metrics: [{ name: "eventCount" }],
+      dimensionFilter: { filter: { fieldName: "eventName", stringFilter: { matchType: "EXACT", value: "contact_form_submit" } } },
+    }),
+    gaRunReport(client, {
+      property: propertyPath(propertyId), dateRanges: [{ startDate, endDate }], metrics: [{ name: "eventCount" }],
+      dimensionFilter: { andGroup: { expressions: [
+        { filter: { fieldName: "eventName", stringFilter: { matchType: "EXACT", value: "demo_cta_click" } } },
+      ] } },
+    }),
+    Promise.all([
+      fetchEventFunnelForProperty(propertyId, startDate, endDate, [
+        { name: "Click en Agenda una demo", eventName: "demo_cta_click" },
+        { name: "Formulario enviado", eventName: "contact_form_submit" },
+      ], {
+        label: "Agenda una demo",
+        description: "Click en CTA → envío exitoso del formulario",
+      }),
+      fetchEventFunnelForProperty(propertyId, startDate, endDate, [
+        { name: "Click en Empezar prueba gratuita", eventName: "free_trial_cta_click" },
+      ], {
+        label: "Empezar prueba gratuita",
+        description: "Clicks en el CTA de inicio de prueba",
+      }),
+    ]),
+  ]);
+  const overviewRow = overview.rows?.[0];
+  return {
+    overview: {
+      activeUsers: overviewRow ? metricValue(overviewRow, 0) : 0,
+      sessions: overviewRow ? metricValue(overviewRow, 1) : 0,
+      screenPageViews: overviewRow ? metricValue(overviewRow, 2) : 0,
+      keyEvents: overviewRow ? metricValue(overviewRow, 3) : 0,
+      bounceRate: overviewRow ? metricValue(overviewRow, 4) : 0,
+      averageSessionDuration: overviewRow ? metricValue(overviewRow, 5) : 0,
+    },
+    series: (series.rows ?? []).map((row) => ({
+      date: dimensionValue(row, 0).replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3"),
+      sessions: metricValue(row, 0), activeUsers: metricValue(row, 1), screenPageViews: metricValue(row, 2),
+    })),
+    pages: toRows(pages, ["hostName", "pagePath"], ["screenPageViews", "sessions", "activeUsers"]),
+    hosts: toRows(hosts, ["hostName"], ["sessions", "activeUsers", "screenPageViews"]),
+    sources: toRows(sources, ["sessionDefaultChannelGroup"], ["sessions", "activeUsers", "screenPageViews"]),
+    events: toRows(events, ["eventName"], ["eventCount", "totalUsers", "keyEvents"]),
+    actions: {
+      trialStarts: trialStarts.rows?.[0] ? metricValue(trialStarts.rows[0], 0) : 0,
+      contactForms: contactForms.rows?.[0] ? metricValue(contactForms.rows[0], 0) : 0,
+      agendaDemoClicks: agendaDemoClicks.rows?.[0] ? metricValue(agendaDemoClicks.rows[0], 0) : 0,
+    },
+    funnels: { demoToContact, freeTrial },
+  };
 }
 
 function metricValue(
@@ -146,6 +241,68 @@ export async function fetchOverview(
     bounceRate: row ? metricValue(row, 4) : 0,
     averageSessionDuration: row ? metricValue(row, 5) : 0,
   };
+}
+
+/**
+ * Evolución diaria del home del sitio principal. Se limita a adereso.ai y
+ * www.adereso.ai para no mezclar las home de landing subdomains.
+ */
+export async function fetchHomeTrafficSeries(
+  startDate: string,
+  endDate: string,
+): Promise<HomeTrafficPoint[]> {
+  const client = createClient();
+  const dimensionNames = ["date"];
+  const metricNames = ["sessions", "activeUsers", "screenPageViews"];
+
+  const mainHostFilter = {
+    orGroup: {
+      expressions: MAIN_SITE_HOSTS.map((host) => ({
+        filter: {
+          fieldName: "hostName",
+          stringFilter: {
+            matchType: "EXACT" as const,
+            value: host,
+            caseSensitive: false,
+          },
+        },
+      })),
+    },
+  };
+
+  const [response] = await gaRunReport(client, {
+    property: propertyPath(),
+    dateRanges: [{ startDate, endDate }],
+    dimensions: dimensionNames.map((name) => ({ name })),
+    metrics: metricNames.map((name) => ({ name })),
+    dimensionFilter: {
+      andGroup: {
+        expressions: [
+          mainHostFilter,
+          {
+            filter: {
+              fieldName: "pagePath",
+              stringFilter: { matchType: "EXACT", value: "/" },
+            },
+          },
+        ],
+      },
+    },
+    orderBys: [{ dimension: { dimensionName: "date" }, desc: false }],
+    limit: 10000,
+  });
+
+  return (response.rows ?? []).map((row) => {
+    const compactDate = dimensionValue(row, 0);
+    return {
+      date: /^\d{8}$/.test(compactDate)
+        ? `${compactDate.slice(0, 4)}-${compactDate.slice(4, 6)}-${compactDate.slice(6, 8)}`
+        : compactDate,
+      sessions: metricValue(row, 0),
+      activeUsers: metricValue(row, 1),
+      screenPageViews: metricValue(row, 2),
+    };
+  });
 }
 
 export async function fetchTopPages(
@@ -1507,19 +1664,21 @@ function parseFunnelTableRows(
   return Array.from(byStep.values());
 }
 
-export async function fetchFunnel(
+async function fetchFunnelForProperty(
+  property: string,
   startDate: string,
   endDate: string,
-  steps: FunnelStepConfig[] = getFunnelSteps(),
+  steps: FunnelStepConfig[],
   meta?: { label?: string; description?: string },
 ): Promise<FunnelResult> {
   const client = createAlphaClient();
 
   try {
     const [response] = await gaRunFunnelReport(client, {
-      property: propertyPath(),
+      property,
       dateRanges: [{ startDate, endDate }],
       funnel: {
+        isOpenFunnel: false,
         steps: steps.map((step) => ({
           name: step.name,
           filterExpression: buildFunnelStepFilter(step),
@@ -1570,6 +1729,45 @@ export async function fetchFunnel(
       ...meta,
     };
   }
+}
+
+export async function fetchFunnel(
+  startDate: string,
+  endDate: string,
+  steps: FunnelStepConfig[] = getFunnelSteps(),
+  meta?: { label?: string; description?: string },
+): Promise<FunnelResult> {
+  return fetchFunnelForProperty(propertyPath(), startDate, endDate, steps, meta);
+}
+
+/** Embudo secuencial de eventos para una propiedad independiente (Cassper). */
+export async function fetchEventFunnelForProperty(
+  propertyId: string,
+  startDate: string,
+  endDate: string,
+  steps: FunnelStepConfig[],
+  meta?: { label?: string; description?: string },
+): Promise<FunnelResult> {
+  const result = await fetchFunnelForProperty(
+    propertyPath(propertyId),
+    startDate,
+    endDate,
+    steps,
+    meta,
+  );
+
+  // GA4 omite del resultado los pasos posteriores que tienen cero usuarios.
+  // Conservamos esos pasos para que el embudo no esconda una conversión de 0.
+  const actual = new Map(result.steps.map((step) => [step.name, step]));
+  return {
+    ...result,
+    steps: steps.map((step) => actual.get(step.name) ?? {
+      name: step.name,
+      users: 0,
+      completionRate: 0,
+      abandonments: 0,
+    }),
+  };
 }
 
 export async function fetchConversionFunnel(

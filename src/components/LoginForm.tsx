@@ -53,13 +53,16 @@ export function LoginForm() {
   async function handleGoogle() {
     setError(null);
     setLoading(true);
-    const auth = getClientAuth();
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ hd: ALLOWED_EMAIL_DOMAIN });
-    provider.addScope("email");
-    provider.addScope("profile");
 
     try {
+      // La configuración Firebase se lee en el cliente y puede faltar en una
+      // instalación local. Debe quedar dentro del try para liberar el botón y
+      // mostrar una explicación, en vez de dejarlo bloqueado.
+      const auth = getClientAuth();
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ hd: ALLOWED_EMAIL_DOMAIN });
+      provider.addScope("email");
+      provider.addScope("profile");
       const result = await signInWithPopup(auth, provider);
       const email = result.user.email;
       if (!isAllowedEmail(email)) {

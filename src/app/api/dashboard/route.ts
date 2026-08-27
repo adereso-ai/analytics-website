@@ -22,6 +22,7 @@ import {
   fetchFormStartBySource,
   fetchGetThankYouConversion,
   fetchHosts,
+  fetchHomeTrafficSeries,
   fetchInterestFunnel,
   fetchInterestNextActions,
   fetchLandingInterest,
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
     const [
       overview,
       overviewPrev,
+      homeTraffic,
       pages,
       hosts,
       sources,
@@ -81,6 +83,7 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       fetchOverview(range.startDate, range.endDate),
       fetchOverview(compare.startDate, compare.endDate),
+      fetchHomeTrafficSeries(range.startDate, range.endDate),
       fetchTopPages(range.startDate, range.endDate),
       fetchHosts(range.startDate, range.endDate),
       fetchTrafficSources(range.startDate, range.endDate),
@@ -123,6 +126,7 @@ export async function GET(request: NextRequest) {
         previous: overviewPrev,
         deltas: overviewDeltas(overview, overviewPrev),
       },
+      homeTraffic,
       pages: filterRowsByHost(pages),
       hosts: filterRowsByHost(hosts),
       sources,

@@ -28,6 +28,15 @@ export type OverviewStats = {
   averageSessionDuration: number;
 };
 
+/** Serie diaria del tráfico que llegó al home de adereso.ai. */
+export type HomeTrafficPoint = {
+  /** Fecha en calendario de la propiedad GA4 (YYYY-MM-DD). */
+  date: string;
+  sessions: number;
+  activeUsers: number;
+  screenPageViews: number;
+};
+
 export type MetricDelta = {
   current: number;
   previous: number;

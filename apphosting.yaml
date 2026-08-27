@@ -9,6 +9,12 @@ env:
       - BUILD
       - RUNTIME
 
+  - variable: CASSPER_GA4_PROPERTY_ID
+    value: "538038785"
+    availability:
+      - BUILD
+      - RUNTIME
+
   # Service account JSON en Cloud Secret Manager (nunca en git ni en la consola).
   - variable: GA4_SERVICE_ACCOUNT_JSON
     secret: GA4_SERVICE_ACCOUNT_JSON

@@ -26,7 +26,18 @@ import {
 } from "@tabler/icons-react";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { DataTable } from "@/components/DataTable";
+import { CassperDashboard } from "@/components/CassperDashboard";
 import {
   DateRangePicker,
   type DateSelection,
@@ -52,6 +63,7 @@ import type {
   DateRangeMeta,
   FunnelResult,
   GetThankYouConversion,
+  HomeTrafficPoint,
   ConversionOriginRow,
   MainHubSpotConversion,
   MetricDelta,
@@ -78,6 +90,7 @@ type DashboardData = {
   rangeMeta: DateRangeMeta;
   meta: DashboardMeta;
   overview: OverviewWithCompare;
+  homeTraffic: HomeTrafficPoint[];
   pages: ReportRow[];
   hosts: ReportRow[];
   sources: ReportRow[];
@@ -177,6 +190,7 @@ const SECTIONS: {
 ];
 
 export function Dashboard({ user }: { user: SessionUser }) {
+  const [brand, setBrand] = useState<"adereso" | "cassper" | null>(null);
   const [selection, setSelection] = useState<DateSelection>(initialSelection);
   const [section, setSection] = useState<SectionId>("overview");
   const [formTab, setFormTab] = useState<
@@ -252,6 +266,14 @@ export function Dashboard({ user }: { user: SessionUser }) {
     void load(next);
   }
 
+  if (!brand) {
+    return <BrandPicker onSelect={setBrand} />;
+  }
+
+  if (brand === "cassper") {
+    return <CassperDashboard onBack={() => setBrand(null)} />;
+  }
+
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#0C0C0D" }}>
       {/* Sidebar desktop */}
@@ -263,6 +285,7 @@ export function Dashboard({ user }: { user: SessionUser }) {
         }}
       >
         <div className={`mb-8 px-2 hero-in ${on ? "on" : ""}`}>
+          <button type="button" onClick={() => setBrand(null)} className="text-left">
           <p
             className={`text-xs font-semibold uppercase tracking-wide ${font}`}
             style={{ color: "#ffd540" }}
@@ -280,6 +303,8 @@ export function Dashboard({ user }: { user: SessionUser }) {
           >
             GA4
           </p>
+          </button>
+          <button type="button" onClick={() => setBrand(null)} className="mt-3 text-xs font-medium text-white/50 transition hover:text-[#ffd540]">↔ Cambiar marca</button>
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
@@ -601,6 +626,26 @@ export function Dashboard({ user }: { user: SessionUser }) {
   );
 }
 
+function BrandPicker({ onSelect }: { onSelect: (brand: "adereso" | "cassper") => void }) {
+  return (
+    <main className="min-h-screen px-5 py-10 md:px-10" style={{ background: "#0C0C0D" }}>
+      <div className="mx-auto flex min-h-[80vh] max-w-5xl flex-col justify-center">
+        <p className={`text-xs font-semibold uppercase tracking-[.22em] ${font}`} style={{ color: "#ffd540" }}>Analítica Web</p>
+        <h1 className={`mt-4 text-4xl font-medium text-white md:text-5xl ${font}`}>¿Qué marca quieres analizar?</h1>
+        <p className="mt-4 max-w-2xl text-base text-white/55">Elige una marca para revisar su tráfico, eventos, conversiones e insights en GA4.</p>
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          <button type="button" onClick={() => onSelect("adereso")} className="rounded-3xl border p-7 text-left transition hover:-translate-y-1" style={{ borderColor: "rgba(255,213,64,.35)", background: "linear-gradient(145deg, rgba(255,213,64,.12), #131415 45%)" }}>
+            <span className="text-xs font-bold tracking-[.18em] text-[#ffd540]">ADERESO</span><h2 className={`mt-5 text-3xl text-white ${font}`}>Adereso</h2><p className="mt-3 text-sm leading-relaxed text-white/55">Sitio principal, landings, formularios, conversiones, embudos e interés comercial.</p><span className="mt-8 inline-block text-sm font-semibold text-[#ffd540]">Abrir analítica →</span>
+          </button>
+          <button type="button" onClick={() => onSelect("cassper")} className="rounded-3xl border p-7 text-left transition hover:-translate-y-1" style={{ borderColor: "rgba(125,222,160,.35)", background: "linear-gradient(145deg, rgba(125,222,160,.12), #131415 45%)" }}>
+            <span className="text-xs font-bold tracking-[.18em] text-[#7ddea0]">CASSPER</span><h2 className={`mt-5 text-3xl text-white ${font}`}>Cassper</h2><p className="mt-3 text-sm leading-relaxed text-white/55">Tráfico, páginas, fuentes de adquisición y eventos que revelan intención y conversión.</p><span className="mt-8 inline-block text-sm font-semibold text-[#7ddea0]">Abrir analítica →</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function Panel({
   children,
   title,
@@ -758,6 +803,8 @@ function OverviewSection({ data }: { data: DashboardData }) {
         />
       </div>
 
+      <HomeTrafficChart points={data.homeTraffic} />
+
       <Panel
         title="Criterios de lectura"
         subtitle="Cómo interpretamos los números para que sean comparables"
@@ -812,6 +859,94 @@ function OverviewSection({ data }: { data: DashboardData }) {
         </ul>
       </Panel>
     </div>
+  );
+}
+
+function HomeTrafficChart({ points }: { points: HomeTrafficPoint[] }) {
+  const chartData = points.map((point) => ({
+    ...point,
+    label: format(new Date(`${point.date}T12:00:00`), "d MMM", {
+      locale: es,
+    }),
+  }));
+
+  return (
+    <Panel
+      title="Tráfico del home en el tiempo"
+      subtitle="Sesiones, usuarios y vistas diarias de adereso.ai/ y www.adereso.ai/"
+    >
+      {chartData.length === 0 ? (
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+          No hay tráfico del home para el período seleccionado.
+        </p>
+      ) : (
+        <div className="h-[320px] -ml-3 md:-ml-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="sessionsFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ffd540" stopOpacity={0.42} />
+                  <stop offset="100%" stopColor="#ffd540" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+              <XAxis
+                dataKey="label"
+                minTickGap={28}
+                tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                width={42}
+                tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                formatter={(value) => formatNumber(Number(value))}
+                contentStyle={{
+                  background: "#202124",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  borderRadius: 12,
+                  color: "#fff",
+                }}
+                labelStyle={{ color: "rgba(255,255,255,0.65)" }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 14, fontSize: 12 }} />
+              <Area
+                type="monotone"
+                dataKey="sessions"
+                name="Sesiones"
+                stroke="#ffd540"
+                fill="url(#sessionsFill)"
+                strokeWidth={2.5}
+                activeDot={{ r: 4 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="activeUsers"
+                name="Usuarios"
+                stroke="#82b1ff"
+                fill="transparent"
+                strokeWidth={2}
+                activeDot={{ r: 4 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="screenPageViews"
+                name="Vistas"
+                stroke="#7ddea0"
+                fill="transparent"
+                strokeWidth={2}
+                activeDot={{ r: 4 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </Panel>
   );
 }
 
