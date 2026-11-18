@@ -42,6 +42,8 @@ function clientOptions(): ClientOptions {
     throw new Error("Faltan credenciales de Google (service account).");
   }
 
+  if (creds.kind === "adc") return {};
+
   if (creds.kind === "json") {
     const parsed = JSON.parse(creds.json) as {
       client_email: string;

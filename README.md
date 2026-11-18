@@ -15,7 +15,7 @@ Dashboard simple sobre la **Google Analytics Data API** para revisar:
 
 1. Crea (o usa) un proyecto en [Google Cloud Console](https://console.cloud.google.com/).
 2. Habilita **Google Analytics Data API**.
-3. Crea un **Service Account** → descarga el JSON de la clave.
+3. En Cloud Run o Firebase App Hosting, usa la cuenta de servicio asignada al runtime.
 
 ### 2. Permisos en GA4
 
@@ -29,7 +29,24 @@ Dashboard simple sobre la **Google Analytics Data API** para revisar:
 cp .env.example .env.local
 ```
 
-Completa al menos:
+En Cloud Run o Firebase App Hosting, habilita Application Default Credentials
+(ADC) para usar la identidad del runtime sin descargar una clave privada:
+
+```env
+GOOGLE_AUTH_USE_ADC=true
+GA4_PROPERTY_ID=123456789
+```
+
+Este modo tiene prioridad sobre `GA4_SERVICE_ACCOUNT_JSON` y las credenciales
+`GOOGLE_CLIENT_EMAIL` / `GOOGLE_PRIVATE_KEY`. Deja `GOOGLE_APPLICATION_CREDENTIALS`
+sin definir para que ADC use la identidad del runtime. Firebase Admin también
+usa ADC y el proyecto indicado por `NEXT_PUBLIC_FIREBASE_PROJECT_ID`; configura las
+variables `NEXT_PUBLIC_FIREBASE_*` para el mismo proyecto de Authentication. La
+cuenta del runtime necesita los permisos de Firebase Admin que usa la aplicación
+y acceso de lectura a las propiedades GA4 consultadas.
+
+Para desarrollo local o despliegues existentes con una clave estática, deja ADC
+deshabilitado y configura:
 
 ```env
 GA4_PROPERTY_ID=123456789

@@ -1,6 +1,7 @@
 import type { FunnelStepConfig } from "./types";
 
 export type GaCredentials =
+  | { kind: "adc" }
   | { kind: "json"; json: string }
   | { kind: "fields"; clientEmail: string; privateKey: string }
   | { kind: "file"; path: string };
@@ -17,6 +18,10 @@ export function getCassperPropertyId(): string | null {
 }
 
 export function getCredentials(): GaCredentials | null {
+  if (process.env.GOOGLE_AUTH_USE_ADC?.trim().toLowerCase() === "true") {
+    return { kind: "adc" };
+  }
+
   const json = process.env.GA4_SERVICE_ACCOUNT_JSON?.trim();
   if (json) return { kind: "json", json };
 
